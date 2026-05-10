@@ -50,7 +50,7 @@
     .cal-event.selected{background:var(--btc-soft);border-color:var(--btc);z-index:3;box-shadow:0 0 0 2px rgba(249,115,22,.18)}
     .cal-event.conflict{outline:2px solid var(--danger);background:var(--danger-soft)}
     .cal-event .time{font-size:9px;color:var(--muted);margin-bottom:2px}
-    .cal-event .ct{font-family:Fraunces,serif;font-size:11px;line-height:1.02;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+    .cal-event .ct{font-family:Fraunces,serif;font-size:10.8px;line-height:1.02;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
     .cal-event.tiny .ct{-webkit-line-clamp:2;font-size:10.5px}
     .modal-backdrop{position:fixed;inset:0;background:rgba(28,25,23,.42);z-index:30;display:none;align-items:flex-end;justify-content:center;padding:14px}
     .modal-backdrop.open{display:flex}
@@ -151,7 +151,19 @@ function listView(day, onlySelected=false){
  return stages.map(st=>{let group=ev.filter(e=>e.stage===st); if(!group.length)return ''; return `<div class="stage"><span class="dot ${group[0].stageKey}"></span>${st}</div>`+group.map(card).join('')}).join('');
 }
 function calendarView(day){
- const ev=EVENTS.filter(e=>e.day===day); const start=9*60, end=18*60, px=2.7, height=(end-start)*px;
+ const ev=EVENTS.filter(e=>e.day===day); const start=9*60, end=18*60, px=2.75, minH=46, gap=7;
+ function layout(stageKey){
+   let lastBottom=0;
+   return ev.filter(e=>e.stageKey===stageKey).sort((a,b)=>min(a.start)-min(b.start)).map(e=>{
+     const timeTop=(min(e.start)-start)*px;
+     const h=Math.max(minH,(min(e.end)-min(e.start))*px-5);
+     const top=Math.max(timeTop,lastBottom+gap);
+     lastBottom=top+h;
+     return {e,top,h};
+   });
+ }
+ const mainLayout=layout('main'), metroLayout=layout('metro');
+ const height=Math.max((end-start)*px, ...mainLayout.map(x=>x.top+x.h), ...metroLayout.map(x=>x.top+x.h)) + 24;
  let ticks='';
  for(let t=start;t<=end;t+=60){ticks+=`<div class="tick" style="top:${(t-start)*px}px">${String(Math.floor(t/60)).padStart(2,'0')}:00</div>`}
  $('#view').innerHTML=`<div class="cal-wrap">
@@ -162,12 +174,11 @@ function calendarView(day){
      <div class="cal-col metro" style="height:${height}px"></div>
    </div>
  </div>`;
- ev.forEach(e=>{
+ [...mainLayout,...metroLayout].forEach(({e,top,h})=>{
    let col=document.querySelector('.cal-col.'+e.stageKey);
-   let h=Math.max(50,(min(e.end)-min(e.start))*px-5);
    let el=document.createElement('button');
-   el.className=`cal-event ${e.stageKey} ${h<52?'tiny':''} ${selected.has(e.id)?'selected':''} ${conflicts(e)?'conflict':''}`;
-   el.style.top=((min(e.start)-start)*px)+'px'; el.style.height=h+'px';
+   el.className=`cal-event ${e.stageKey} ${h<54?'tiny':''} ${selected.has(e.id)?'selected':''} ${conflicts(e)?'conflict':''}`;
+   el.style.top=top+'px'; el.style.height=h+'px';
    el.onclick=()=>openEvent(e.id);
    el.innerHTML=`<div class="time">${e.start}–${e.end}</div><div class="ct">${esc(e.title)}</div>`;
    col.appendChild(el);
