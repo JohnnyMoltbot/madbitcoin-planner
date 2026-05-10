@@ -36,14 +36,22 @@
     .title{font-family:Fraunces,serif;font-size:17px;line-height:1.05;letter-spacing:-.02em}
     .people{font-size:12px;color:var(--muted);margin-top:8px;line-height:1.25}
     .hint{font-size:12px;color:var(--muted);margin:10px 0}
-    .calendar{position:relative;display:grid;grid-template-columns:34px 1fr 1fr;gap:6px;margin-top:12px}
-    .cal-head{position:sticky;top:88px;z-index:4;background:var(--paper);font-size:11px;font-weight:900;text-align:center;padding:6px 2px;border-bottom:1px solid var(--line)}
-    .axis{font-family:'JetBrains Mono';font-size:10px;color:var(--muted);text-align:right;padding-right:2px;border-top:1px solid var(--line)}
-    .slot{min-height:58px;border-top:1px solid var(--line);position:relative}
-    .cal-event{position:absolute;left:2px;right:2px;border-radius:10px;border:1px solid var(--line);background:#fffdf8;padding:5px;overflow:hidden;font-size:10px;line-height:1.1;z-index:2}
-    .cal-event.selected{background:var(--btc-soft);border-color:var(--btc);z-index:3}
+    .cal-wrap{margin-top:12px}
+    .cal-legend{display:grid;grid-template-columns:32px 1fr 1fr;gap:8px;position:sticky;top:88px;z-index:4;background:var(--paper);padding:6px 0 8px;border-bottom:1px solid var(--line)}
+    .cal-legend div{font-size:10px;font-weight:900;text-align:center;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)}
+    .cal-stage-label.main{color:var(--main)} .cal-stage-label.metro{color:var(--metro)}
+    .cal-body{display:grid;grid-template-columns:32px 1fr 1fr;gap:8px;position:relative}
+    .cal-axis{position:relative;font-family:'JetBrains Mono';font-size:10px;color:var(--muted)}
+    .tick{position:absolute;right:2px;transform:translateY(-50%)}
+    .cal-col{position:relative;border-left:1px solid var(--line);border-right:1px solid var(--line);background:repeating-linear-gradient(to bottom, transparent 0, transparent 57px, var(--line) 58px);min-height:100px}
+    .cal-col.main{background-color:rgba(20,83,45,.025)} .cal-col.metro{background-color:rgba(29,78,216,.025)}
+    .cal-event{position:absolute;left:3px;right:3px;border-radius:9px;border:1px solid var(--line);background:#fffdf8;padding:5px 6px;overflow:hidden;font-size:10px;line-height:1.05;z-index:2;box-shadow:0 1px 2px rgba(28,25,23,.05)}
+    .cal-event.main{border-left:4px solid var(--main)} .cal-event.metro{border-left:4px solid var(--metro)}
+    .cal-event.selected{background:var(--btc-soft);border-color:var(--btc);z-index:3;box-shadow:0 0 0 2px rgba(249,115,22,.18)}
     .cal-event.conflict{outline:2px solid var(--danger);background:var(--danger-soft)}
-    .cal-event .ct{font-family:Fraunces,serif;font-size:11px;line-height:1.05}
+    .cal-event .time{font-size:9px;color:var(--muted);margin-bottom:2px}
+    .cal-event .ct{font-family:Fraunces,serif;font-size:11.5px;line-height:1.03;display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden}
+    .cal-event.tiny .ct{-webkit-line-clamp:3;font-size:10.7px}
     .empty{border:1px dashed var(--line);border-radius:18px;padding:22px;text-align:center;color:var(--muted);margin-top:24px}
     nav{position:fixed;left:50%;bottom:0;transform:translateX(-50%);width:min(430px,100%);height:var(--nav-h);background:rgba(250,250,249,.94);backdrop-filter:blur(12px);border-top:1px solid var(--line);display:grid;grid-template-columns:1fr 1fr 1fr;padding:8px 10px max(8px,env(safe-area-inset-bottom));gap:8px;z-index:10}
     nav button{border-radius:16px;padding:0 8px;background:#fffdf8}
@@ -91,12 +99,27 @@ function listView(day, onlySelected=false){
  return stages.map(st=>{let group=ev.filter(e=>e.stage===st); if(!group.length)return ''; return `<div class="stage"><span class="dot ${group[0].stageKey}"></span>${st}</div>`+group.map(card).join('')}).join('');
 }
 function calendarView(day){
- const ev=EVENTS.filter(e=>e.day===day); const start=9*60, end=18*60, px=58/30;
- let html='<div class="calendar"><div></div><div class="cal-head">Teatro</div><div class="cal-head">Metrópolis</div>';
- for(let t=start;t<=end;t+=30){let label=t%60===0?String(t/60).padStart(2,'0')+':00':''; html+=`<div class="axis">${label}</div><div class="slot"></div><div class="slot"></div>`}
- html+='</div><div style="position:relative;margin-top:-'+((end-start)/30+1)*58+'px;height:'+((end-start)/30+1)*58+'px;display:grid;grid-template-columns:34px 1fr 1fr;gap:6px;pointer-events:none"><div></div><div class="col main"></div><div class="col metro"></div></div>';
- $('#view').innerHTML=html;
- ev.forEach(e=>{let col=document.querySelector('.col.'+e.stageKey); let el=document.createElement('button'); el.className='cal-event '+(selected.has(e.id)?'selected ':'')+(conflicts(e)?'conflict':''); el.style.top=((min(e.start)-start)*px)+'px'; el.style.height=Math.max(34,(min(e.end)-min(e.start))*px-3)+'px'; el.style.pointerEvents='auto'; el.onclick=()=>toggle(e.id); el.innerHTML=`<div class="time">${e.start}</div><div class="ct">${e.title}</div>`; col.appendChild(el); });
+ const ev=EVENTS.filter(e=>e.day===day); const start=9*60, end=18*60, px=2.7, height=(end-start)*px;
+ let ticks='';
+ for(let t=start;t<=end;t+=60){ticks+=`<div class="tick" style="top:${(t-start)*px}px">${String(Math.floor(t/60)).padStart(2,'0')}:00</div>`}
+ $('#view').innerHTML=`<div class="cal-wrap">
+   <div class="cal-legend"><div></div><div class="cal-stage-label main">Teatro</div><div class="cal-stage-label metro">Metrópolis</div></div>
+   <div class="cal-body" style="height:${height}px">
+     <div class="cal-axis">${ticks}</div>
+     <div class="cal-col main" style="height:${height}px"></div>
+     <div class="cal-col metro" style="height:${height}px"></div>
+   </div>
+ </div>`;
+ ev.forEach(e=>{
+   let col=document.querySelector('.cal-col.'+e.stageKey);
+   let h=Math.max(50,(min(e.end)-min(e.start))*px-5);
+   let el=document.createElement('button');
+   el.className=`cal-event ${e.stageKey} ${h<52?'tiny':''} ${selected.has(e.id)?'selected':''} ${conflicts(e)?'conflict':''}`;
+   el.style.top=((min(e.start)-start)*px)+'px'; el.style.height=h+'px';
+   el.onclick=()=>toggle(e.id);
+   el.innerHTML=`<div class="time">${e.start}–${e.end}</div><div class="ct">${e.title}</div>`;
+   col.appendChild(el);
+ });
  return null;
 }
 function render(){
