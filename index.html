@@ -1,0 +1,250 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#f97316" />
+  <title>MadBitcoin Planner</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,750&family=JetBrains+Mono:wght@500;700&family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+  <link rel="manifest" href="manifest.webmanifest">
+  <style>
+    :root {
+      --paper:#fafaf9; --ink:#1c1917; --muted:#78716c; --line:#e7e5e4;
+      --btc:#f97316; --btc-soft:#ffedd5; --main:#14532d; --main-soft:#dcfce7;
+      --metro:#1d4ed8; --metro-soft:#dbeafe; --danger:#dc2626; --danger-soft:#fee2e2;
+      --nav-h:86px;
+    }
+    *{box-sizing:border-box} body{margin:0;background:var(--paper);color:var(--ink);font-family:Inter,system-ui,sans-serif;-webkit-tap-highlight-color:transparent}
+    .app{max-width:430px;margin:0 auto;min-height:100dvh;padding:18px 14px calc(var(--nav-h) + 90px)}
+    header{position:sticky;top:0;z-index:5;background:linear-gradient(var(--paper) 82%, transparent);padding:10px 0 14px}
+    h1{font-family:Fraunces,serif;font-size:31px;line-height:.95;margin:0;letter-spacing:-.04em}
+    .sub{font-size:12px;color:var(--muted);margin-top:8px;text-transform:uppercase;letter-spacing:.08em;font-weight:800}
+    .toolbar{display:flex;gap:8px;align-items:center;margin-top:14px}
+    button{min-height:44px;border:1px solid var(--line);border-radius:999px;background:#fffaf4;color:var(--ink);font-weight:800;padding:0 14px;font-family:Inter,sans-serif}
+    button.active{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+    .stage{margin:18px 0 8px;display:flex;align-items:center;gap:8px;font-family:Fraunces,serif;font-size:22px}
+    .dot{width:10px;height:10px;border-radius:50%} .dot.main{background:var(--main)} .dot.metro{background:var(--metro)}
+    .card{width:100%;text-align:left;border:1px solid var(--line);background:#fffdf8;border-radius:18px;padding:13px 14px;margin:9px 0;box-shadow:0 1px 0 rgba(28,25,23,.04);min-height:74px}
+    .card.selected{border-color:var(--btc);background:var(--btc-soft);box-shadow:0 0 0 2px rgba(249,115,22,.16)}
+    .card.conflict{border-color:var(--danger);background:linear-gradient(90deg,var(--danger-soft),#fffdf8)}
+    .meta{display:flex;justify-content:space-between;gap:10px;align-items:center;margin-bottom:7px}
+    .time{font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:700;color:var(--muted)}
+    .badge{font-size:10px;text-transform:uppercase;letter-spacing:.08em;border-radius:999px;padding:4px 7px;font-weight:900}
+    .badge.main{background:var(--main-soft);color:var(--main)} .badge.metro{background:var(--metro-soft);color:var(--metro)}
+    .title{font-family:Fraunces,serif;font-size:17px;line-height:1.05;letter-spacing:-.02em}
+    .people{font-size:12px;color:var(--muted);margin-top:8px;line-height:1.25}
+    .marks{display:flex;gap:6px;margin-top:8px;font-size:12px;color:var(--muted)}
+    .hint{font-size:12px;color:var(--muted);margin:10px 0}
+    .cal-wrap{margin-top:12px;padding-bottom:120px}
+    .cal-legend{display:grid;grid-template-columns:30px 1fr 1fr;gap:6px;position:sticky;top:88px;z-index:4;background:var(--paper);padding:8px 0 9px;border-bottom:1px solid var(--line)}
+    .cal-legend div{font-size:10px;font-weight:900;text-align:center;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)}
+    .cal-stage-label.main{color:var(--main)} .cal-stage-label.metro{color:var(--metro)}
+    .cal-body{display:grid;grid-template-columns:30px 1fr 1fr;gap:6px;position:relative}
+    .cal-axis{position:relative;font-family:'JetBrains Mono';font-size:10px;color:var(--muted)}
+    .tick{position:absolute;right:2px;transform:translateY(-50%)}
+    .cal-col{position:relative;border-left:1px solid var(--line);border-right:1px solid var(--line);background:repeating-linear-gradient(to bottom, transparent 0, transparent 57px, var(--line) 58px);min-height:100px}
+    .cal-col.main{background-color:rgba(20,83,45,.025)} .cal-col.metro{background-color:rgba(29,78,216,.025)}
+    .cal-event{position:absolute;left:3px;right:3px;min-height:44px;border-radius:10px;border:1px solid var(--line);background:#fffdf8;padding:6px 6px;overflow:hidden;font-size:10px;line-height:1.05;z-index:2;box-shadow:0 1px 2px rgba(28,25,23,.05);text-align:left}
+    .cal-event.main{border-left:4px solid var(--main)} .cal-event.metro{border-left:4px solid var(--metro)}
+    .cal-event.selected{background:var(--btc-soft);border-color:var(--btc);z-index:3;box-shadow:0 0 0 2px rgba(249,115,22,.18)}
+    .cal-event.conflict{outline:2px solid var(--danger);background:var(--danger-soft)}
+    .cal-event .time{font-size:9px;color:var(--muted);margin-bottom:2px}
+    .cal-event .ct{font-family:Fraunces,serif;font-size:10.8px;line-height:1.02;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+    .cal-event.tiny .ct{-webkit-line-clamp:2;font-size:10.5px}
+    .modal-backdrop{position:fixed;inset:0;background:rgba(28,25,23,.42);z-index:30;display:none;align-items:flex-end;justify-content:center;padding:14px}
+    .modal-backdrop.open{display:flex}
+    .modal{width:min(430px,100%);max-height:82dvh;overflow:auto;background:#fffdf8;border:1px solid var(--line);border-radius:26px 26px 18px 18px;box-shadow:0 24px 80px rgba(28,25,23,.28);padding:18px}
+    .modal-top{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;margin-bottom:12px}
+    .modal-kicker{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--muted);font-weight:800;margin-bottom:8px}
+    .modal-title{font-family:Fraunces,serif;font-size:25px;line-height:1;letter-spacing:-.035em;margin:0}
+    .modal-close{width:44px;min-width:44px;height:44px;padding:0;border-radius:50%;font-size:22px;background:var(--paper)}
+    .modal-row{border-top:1px solid var(--line);padding:12px 0;font-size:14px;line-height:1.35}
+    .modal-label{font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);font-weight:900;margin-bottom:4px}
+    textarea{width:100%;min-height:92px;border:1px solid var(--line);border-radius:14px;background:#fffaf4;color:var(--ink);padding:10px 12px;font:14px/1.35 Inter,sans-serif;resize:vertical}
+    .photo-input{width:100%;border:1px dashed var(--line);border-radius:14px;background:#fffaf4;padding:12px;font-size:13px;color:var(--muted)}
+    .photo-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px}
+    .photo{position:relative;aspect-ratio:1;border-radius:12px;overflow:hidden;border:1px solid var(--line);background:var(--paper)}
+    .photo img{width:100%;height:100%;object-fit:cover;display:block}
+    .photo button{position:absolute;top:4px;right:4px;width:28px;min-width:28px;height:28px;min-height:28px;padding:0;border-radius:999px;background:rgba(28,25,23,.82);color:#fff;border:0;font-size:18px;line-height:1}
+    .modal-warning{display:none;margin:10px 0;padding:10px 12px;border-radius:14px;background:var(--danger-soft);color:#7f1d1d;font-size:13px;font-weight:700}
+    .modal-warning.show{display:block}
+    .modal-actions{position:sticky;bottom:-18px;background:linear-gradient(transparent,#fffdf8 22%);padding-top:18px;display:grid;grid-template-columns:1fr;gap:10px}
+    .select-btn{width:100%;border-radius:16px;background:var(--btc);border-color:var(--btc);color:#431407;font-size:15px}
+    .select-btn.selected{background:var(--ink);border-color:var(--ink);color:var(--paper)}
+    .empty{border:1px dashed var(--line);border-radius:18px;padding:22px;text-align:center;color:var(--muted);margin-top:24px}
+    nav{position:fixed;left:50%;bottom:0;transform:translateX(-50%);width:min(430px,100%);height:var(--nav-h);background:rgba(250,250,249,.94);backdrop-filter:blur(12px);border-top:1px solid var(--line);display:grid;grid-template-columns:1fr 1fr 1fr;padding:8px 10px max(8px,env(safe-area-inset-bottom));gap:8px;z-index:10}
+    nav button{border-radius:16px;padding:0 8px;background:#fffdf8}
+    nav button.active{background:var(--btc);border-color:var(--btc);color:#431407}
+    .count{font-family:'JetBrains Mono';font-size:11px}
+  </style>
+</head>
+<body>
+<div class="app">
+<header>
+  <h1>MadBitcoin<br>Planner</h1>
+  <div class="sub" id="subtitle">Lun 11 · programme</div>
+  <div class="toolbar" id="toolbar">
+    <button data-mode="list" class="active">Liste</button>
+    <button data-mode="calendar">Grille</button>
+  </div>
+</header>
+<main id="view"></main>
+</div>
+<div id="modalBackdrop" class="modal-backdrop" onclick="backdropClose(event)">
+  <section class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+    <div class="modal-top">
+      <div>
+        <div class="modal-kicker" id="modalKicker"></div>
+        <h2 class="modal-title" id="modalTitle"></h2>
+      </div>
+      <button class="modal-close" onclick="closeModal()" aria-label="Fermer">×</button>
+    </div>
+    <div id="modalWarning" class="modal-warning"></div>
+    <div class="modal-row"><div class="modal-label">Scène</div><div id="modalStage"></div></div>
+    <div class="modal-row"><div class="modal-label">Type</div><div id="modalType"></div></div>
+    <div class="modal-row"><div class="modal-label">Intervenants</div><div id="modalPeople"></div></div>
+    <div class="modal-row"><div class="modal-label">Bloc</div><div id="modalBlock"></div></div>
+    <div class="modal-row"><div class="modal-label">Commentaire perso</div><textarea id="modalComment" placeholder="Note, idée, contact rencontré…" oninput="saveComment()"></textarea></div>
+    <div class="modal-row"><div class="modal-label">Photos</div><input id="modalPhotos" class="photo-input" type="file" accept="image/*" multiple onchange="addPhotos(event)"><div id="photoGrid" class="photo-grid"></div></div>
+    <div class="modal-actions"><button id="modalSelect" class="select-btn" onclick="toggleFromModal()"></button></div>
+  </section>
+</div>
+<nav>
+  <button data-tab="monday" class="active">Lun 11<br><span class="count" id="c-monday">0</span></button>
+  <button data-tab="tuesday">Mar 12<br><span class="count" id="c-tuesday">0</span></button>
+  <button data-tab="plan">Mon plan<br><span class="count" id="c-plan">0</span></button>
+</nav>
+<script>
+const EVENTS = [{"id": "monday-tea-0915-0", "day": "monday", "dayLabel": "Lun 11", "stage": "Teatro Fernando de Rojas", "stageKey": "main", "start": "09:15", "end": "09:30", "duration": 15, "type": "OPENING", "title": "Opening speech", "block": "BLOCK: THE ROOT OF THE PROBLEM.", "people": ["Angel Niño"]}, {"id": "monday-tea-0930-1", "day": "monday", "dayLabel": "Lun 11", "stage": "Teatro Fernando de Rojas", "stageKey": "main", "start": "09:30", "end": "10:00", "duration": 30, "type": "KEYNOTE", "title": "What's the problem?", "block": "BLOCK: THE ROOT OF THE PROBLEM.", "people": ["Joe Bryan"]}, {"id": "monday-tea-1000-2", "day": "monday", "dayLabel": "Lun 11", "stage": "Teatro Fernando de Rojas", "stageKey": "main", "start": "10:00", "end": "10:20", "duration": 20, "type": "KEYNOTE", "title": "Bitcoin as Proof of Resistance to Control: A sovereignty framework for institutions, businesses, and individuals", "block": "BLOCK: THE SOLUTION. BITCOIN IS THE ANSWER", "people": ["Efrat Fenigson"]}, {"id": "monday-tea-1020-3", "day": "monday", "dayLabel": "Lun 11", "stage": "Teatro Fernando de Rojas", "stageKey": "main", "start": "10:20", "end": "10:50", "duration": 30, "type": "KEYNOTE", "title": "Building Resilient Energy on Bitcoin: How Mining Turns Grid Fragility into Strength (Spain Blackout Case Study)", "block": "BLOCK: THE SOLUTION. BITCOIN IS THE ANSWER", "people": ["Daniel Batten"]}, {"id": "monday-tea-1040-4", "day": "monday", "dayLabel": "Lun 11", "stage": "Teatro Fernando de Rojas", "stageKey": "main", "start": "10:40", "end": "11:20", "duration": 40, "type": "FIRESIDE CHAT", "title": "The Solution is Local: How Bitcoin Strengthens Communities, Corporations, and Everyday Users Across Latin America", "block": "BLOCK: THE SOLUTION. BITCOIN IS THE ANSWER", "people": ["Mod. Omar Lopez", "Juan Pablo Moraga Leigh", "Ariel Aguilar", "Miss Bitcoin", "Leo Bebchuk", "Clemente Acosta"]}, {"id": "monday-tea-1140-5", "day": "monday", "dayLabel": "Lun 11", "stage": "Teatro Fernando de Rojas", "stageKey": "main", "start": "11:40", "end": "12:20", "duration": 40, "type": "PANEL", "title": "Bitcoin Is the Answer: Neutral, Censorship-Resistant Money vs. the Failures of Crypto, Gold, and Central Bank Digital Currencies", "block": "BLOCK: THE SOLUTION. BITCOIN IS THE ANSWER", "people": ["Mod. Kristyna Mazankova", "Efrat Fenigson", "Knut Svanholm", "Remu Karhulahti"]}, {"id": "monday-tea-1220-6", "day": "monday", "dayLabel": "Lun 11", "stage": "Teatro Fernando de Rojas", "stageKey": "main", "start": "12:20", "end": "13:00", "duration": 40, "type": "KEYNOTE", "title": "The Great Macro Reset: Inflation, Record Debt, Wars, Sanctions, and Asset Bubbles — Why Bitcoin is Emerging as the Ultimate Neutral Money", "block": "BLOCK: THE SOLUTION. BITCOIN IS THE ANSWER", "people": ["Juan Ramón Rallo"]}, {"id": "monday-tea-1300-7", "day": "monday", "dayLabel": "Lun 11", "stage": "Teatro Fernando de Rojas", "stageKey": "main", "start": "13:00", "end": "13:20", "duration": 20, "type": "KEYNOTE", "title": "Not retail - only anymore: Bitcon as a strategic asset. Corporate treasuries, institutional adoption, and lessons for all", "block": "BLOCK: BUILDING ON BITCOIN", "people": ["Javier Pastor Moreno"]}, {"id": "monday-tea-1430-8", "day": "monday", "dayLabel": "Lun 11", "stage": "Teatro Fernando de Rojas", "stageKey": "main", "start": "14:30", "end": "15:10", "duration": 40, "type": "PANEL", "title": "Transitioning Traditional Businesses to Bitcoin Treasuries: Real-world case studies on profitability, liquidity, and shareholder value creation.", "block": "BLOCK: BUILDING ON BITCOIN", "people": ["Mod. Tim Kotzman", "Charlene Hill Fadirepo", "Jamie Knowles", "Ben Werkman", "Scott P. Elam", "Roland Talalas"]}, {"id": "monday-tea-1510-9", "day": "monday", "dayLabel": "Lun 11", "stage": "Teatro Fernando de Rojas", "stageKey": "main", "start": "15:10", "end": "15:30", "duration": 20, "type": "KEYNOTE", "title": "Bitcoin beyond the Institutional bid - What the conflict in Iran has taught us about the future of Bitcoin", "block": "BLOCK: BUILDING ON BITCOIN", "people": ["Bradley Duke"]}, {"id": "monday-tea-1530-10", "day": "monday", "dayLabel": "Lun 11", "stage": "Teatro Fernando de Rojas", "stageKey": "main", "start": "15:30", "end": "16:10", "duration": 40, "type": "PANEL", "title": "Institutional Bitcoin 2.0: Wealth Management, Investment Funds, and the Next Wave of Adoption", "block": "BLOCK: BUILDING ON BITCOIN", "people": ["Mod. Javier Molina", "Ruben Ayuso", "Roman Gonzalez", "Javier Pineda", "Jesus Perez"]}, {"id": "monday-tea-1745-11", "day": "monday", "dayLabel": "Lun 11", "stage": "Teatro Fernando de Rojas", "stageKey": "main", "start": "17:45", "end": "18:45", "duration": 60, "type": "PANEL", "title": "Learning Heroes Fireside panel", "block": "BLOCK: BUILDING ON BITCOIN", "people": ["Arnau Ramió", "Carlos Molinillo"]}, {"id": "monday-tea-1620-12", "day": "monday", "dayLabel": "Lun 11", "stage": "Teatro Fernando de Rojas", "stageKey": "main", "start": "16:20", "end": "17:00", "duration": 40, "type": "PANEL", "title": "Regulatory Catalysts: MiCA vs. GENIUS & CLARITY Acts — Unlocking Bitcoin for Institutions and Retail", "block": "BLOCK: WORLD TODAY-CHANGE CATALYSTS", "people": ["Mod. Sergi Andres", "Clara Garcia Prieto", "Cristina Carrascosa", "Jose Antonio Bravo", "Sol Cinosi"]}, {"id": "monday-tea-1700-13", "day": "monday", "dayLabel": "Lun 11", "stage": "Teatro Fernando de Rojas", "stageKey": "main", "start": "17:00", "end": "17:40", "duration": 40, "type": "PANEL", "title": "AI, digital assets and quantum computing: risks and opportunities for bitcoin adoption for institutions and individuals", "block": "BLOCK: WORLD TODAY-CHANGE CATALYSTS", "people": ["Mod. Juan Antonio Saez", "Juan A. Muñoz", "Frank Moreno", "Eneko Knorr", "Carlos Salinas"]}, {"id": "monday-met-0930-14", "day": "monday", "dayLabel": "Lun 11", "stage": "Metrópolis Stage", "stageKey": "metro", "start": "09:30", "end": "10:00", "duration": 30, "type": "WORKSHOP", "title": "Bitcoin for Everyone: Making Corporate Treasury Strategies Accessible to Retail Investors and Individuals", "block": "VIP & METRÓPOLIS STAGE - MONDAY", "people": ["Alexandre Laizet"]}, {"id": "monday-met-1000-15", "day": "monday", "dayLabel": "Lun 11", "stage": "Metrópolis Stage", "stageKey": "metro", "start": "10:00", "end": "10:20", "duration": 20, "type": "KEYNOTE", "title": "The Evolution of Bitcoin Investing: Lessons from a Decade of Institutional Research", "block": "VIP & METRÓPOLIS STAGE - MONDAY", "people": ["Yves Choueifaty"]}, {"id": "monday-met-1020-16", "day": "monday", "dayLabel": "Lun 11", "stage": "Metrópolis Stage", "stageKey": "metro", "start": "10:20", "end": "10:50", "duration": 30, "type": "WORKSHOP", "title": "How to get to Bitcoin Monetisation Through Trade Credit on Bitcoin Rails", "block": "VIP & METRÓPOLIS STAGE - MONDAY", "people": ["Hubertus \"The Austrian\""]}, {"id": "monday-met-1050-17", "day": "monday", "dayLabel": "Lun 11", "stage": "Metrópolis Stage", "stageKey": "metro", "start": "10:50", "end": "11:20", "duration": 30, "type": "WORKSHOP", "title": "From Curiosity to Conviction: How Institutions Take the First Step into Bitcoin", "block": "VIP & METRÓPOLIS STAGE - MONDAY", "people": ["Arash Nasri"]}, {"id": "monday-met-1120-18", "day": "monday", "dayLabel": "Lun 11", "stage": "Metrópolis Stage", "stageKey": "metro", "start": "11:20", "end": "11:40", "duration": 20, "type": "PANEL", "title": "Que significa introducir bitcoin en el banco tradicional", "block": "VIP & METRÓPOLIS STAGE - MONDAY", "people": ["Mod. Jesus Perez", "Carlos Salinas", "Eric Garcia"]}, {"id": "monday-met-1210-19", "day": "monday", "dayLabel": "Lun 11", "stage": "Metrópolis Stage", "stageKey": "metro", "start": "12:10", "end": "12:30", "duration": 20, "type": "WORKSHOP", "title": "Bitwise: la revolución de los ETP cripto", "block": "VIP & METRÓPOLIS STAGE - MONDAY", "people": ["Flavio Rosetti"]}, {"id": "monday-met-1220-20", "day": "monday", "dayLabel": "Lun 11", "stage": "Metrópolis Stage", "stageKey": "metro", "start": "12:20", "end": "12:50", "duration": 30, "type": "KEYNOTE", "title": "From Asset Manager to Bitcoin Treasury Powerhouse: Strive's Journey Issuing SATA Digital Credit and Buying Strategy Preferreds", "block": "VIP & METRÓPOLIS STAGE - MONDAY", "people": ["Ben Werkman"]}, {"id": "monday-met-1250-21", "day": "monday", "dayLabel": "Lun 11", "stage": "Metrópolis Stage", "stageKey": "metro", "start": "12:50", "end": "13:20", "duration": 30, "type": "KEYNOTE", "title": "The Greatest Convergence in History: AI, Singularity, Immortality and Abundance: Bitcoin, Longevity and More!", "block": "VIP & METRÓPOLIS STAGE - MONDAY", "people": ["Jose Cordeiro"]}, {"id": "monday-met-1430-22", "day": "monday", "dayLabel": "Lun 11", "stage": "Metrópolis Stage", "stageKey": "metro", "start": "14:30", "end": "15:00", "duration": 30, "type": "PANEL", "title": "Czechia: From Entrepreneurial Bitcoin to Central Bank Reserves – The European Example Spain Can Copy", "block": "VIP & METRÓPOLIS STAGE - MONDAY", "people": ["Mod. Paula Pascual Cortés", "Michal Nydrle", "Pavla Nydrle"]}, {"id": "monday-met-1500-23", "day": "monday", "dayLabel": "Lun 11", "stage": "Metrópolis Stage", "stageKey": "metro", "start": "15:00", "end": "15:30", "duration": 30, "type": "KEYNOTE", "title": "USDT Comes Home: Bitcoin as the settlement layer for the dolar economy", "block": "VIP & METRÓPOLIS STAGE - MONDAY", "people": ["Evan T."]}, {"id": "monday-met-1530-24", "day": "monday", "dayLabel": "Lun 11", "stage": "Metrópolis Stage", "stageKey": "metro", "start": "15:30", "end": "16:15", "duration": 45, "type": "PANEL", "title": "From Meetups to Mass Adoption: How Local gatherings and Bitcoin-Native Platforms Drive Everyday Bitcoin Use", "block": "VIP & METRÓPOLIS STAGE - MONDAY", "people": ["Mod. José Luis Cacéres", "Jordi Llonch", "Cristina Gil", "Carlos", "Pachi Rodríguez"]}, {"id": "monday-met-1615-25", "day": "monday", "dayLabel": "Lun 11", "stage": "Metrópolis Stage", "stageKey": "metro", "start": "16:15", "end": "16:45", "duration": 30, "type": "KEYNOTE", "title": "XCE — Connecting Excellence: Integrating a Bitcoin Treasury into a traditional operating business, to disrupt a global industry", "block": "VIP & METRÓPOLIS STAGE - MONDAY", "people": ["Scott P. Ellam"]}, {"id": "monday-met-1645-26", "day": "monday", "dayLabel": "Lun 11", "stage": "Metrópolis Stage", "stageKey": "metro", "start": "16:45", "end": "17:15", "duration": 30, "type": "FIRESIDE CHAT", "title": "Building Real-World Value on Bitcoin: Tokenization, Infrastructure, and Mass Adoption Strategies for Retail, Institutions and High-Net-Worth Investors", "block": "VIP & METRÓPOLIS STAGE - MONDAY", "people": ["Mod. Angel Pardo García", "Antonio Sundas", "Juan Jiménez Zaballos", "Toni Moral", "Carlos Puig"]}, {"id": "monday-met-1715-27", "day": "monday", "dayLabel": "Lun 11", "stage": "Metrópolis Stage", "stageKey": "metro", "start": "17:15", "end": "18:00", "duration": 45, "type": "PANEL", "title": "Bit2Me Loan. Cómo obtener liquidez aprovechando tus Bitcoin", "block": "VIP & METRÓPOLIS STAGE - MONDAY", "people": ["Javier Pastor", "Jesús Hernández Escavy"]}, {"id": "tuesday-tea-1150-28", "day": "tuesday", "dayLabel": "Mar 12", "stage": "Teatro Fernando de Rojas", "stageKey": "main", "start": "11:50", "end": "12:25", "duration": 35, "type": "PANEL", "title": "Bridging Bitcoin and Traditional Finance: Practical Innovation in Custody, Yield, and Lending", "block": "BLOCK: BUILDING ON BITCOIN - TUESDAY MORNING", "people": ["Mod. Ed Juline", "Juan Jiménez Zaballos", "Toby Lewis", "Michal Nýdrle", "Alexander Leishman"]}, {"id": "tuesday-tea-1000-29", "day": "tuesday", "dayLabel": "Mar 12", "stage": "Teatro Fernando de Rojas", "stageKey": "main", "start": "10:00", "end": "10:20", "duration": 20, "type": "KEYNOTE", "title": "Building on Bitcoin: How ETFs, Funds, and Macro Trends Are Reshaping the Market", "block": "BLOCK: BUILDING ON BITCOIN - TUESDAY MORNING", "people": ["André Dragosch"]}, {"id": "tuesday-tea-1020-30", "day": "tuesday", "dayLabel": "Mar 12", "stage": "Teatro Fernando de Rojas", "stageKey": "main", "start": "10:20", "end": "10:40", "duration": 20, "type": "KEYNOTE", "title": "Institutional demand for BTC Yield", "block": "BLOCK: BUILDING ON BITCOIN - TUESDAY MORNING", "people": ["Tommy Doyle"]}, {"id": "tuesday-tea-1040-31", "day": "tuesday", "dayLabel": "Mar 12", "stage": "Teatro Fernando de Rojas", "stageKey": "main", "start": "10:40", "end": "11:00", "duration": 20, "type": "KEYNOTE", "title": "Hacia un nuevo sistema financiero.", "block": "BLOCK: BUILDING ON BITCOIN - TUESDAY MORNING", "people": ["Teodoro García Egea"]}, {"id": "tuesday-tea-1100-32", "day": "tuesday", "dayLabel": "Mar 12", "stage": "Teatro Fernando de Rojas", "stageKey": "main", "start": "11:00", "end": "11:35", "duration": 35, "type": "PANEL", "title": "Institutional Bitcoin Breakthroughs: Pensions, Brokerage & Bitcoin-Native Markets", "block": "BLOCK: BUILDING ON BITCOIN - TUESDAY MORNING", "people": ["Mod. Richard Byworth", "Sam Roberts", "Leopoldo Moreno", "Guillaume Bajczman", "Flavio Rosetti"]}, {"id": "tuesday-tea-0915-33", "day": "tuesday", "dayLabel": "Mar 12", "stage": "Teatro Fernando de Rojas", "stageKey": "main", "start": "09:15", "end": "10:00", "duration": 45, "type": "PANEL", "title": "Building Generational Wealth on Bitcoin: Strategies for Family Offices and Institutions", "block": "BLOCK: BUILDING ON BITCOIN - TUESDAY MORNING", "people": ["Mod. Alberto Mera", "Richard Byworth", "Rony Vogel", "Sasa Jovanovic", "Quim Allard"]}, {"id": "tuesday-tea-1225-34", "day": "tuesday", "dayLabel": "Mar 12", "stage": "Teatro Fernando de Rojas", "stageKey": "main", "start": "12:25", "end": "12:45", "duration": 20, "type": "KEYNOTE", "title": "Vanadi Treasury: Clearing the path for the insitutional bitcoin adoption in Spain", "block": "BLOCK: BUILDING ON BITCOIN - TUESDAY MORNING", "people": ["Esau Rojo"]}, {"id": "tuesday-tea-1245-35", "day": "tuesday", "dayLabel": "Mar 12", "stage": "Teatro Fernando de Rojas", "stageKey": "main", "start": "12:45", "end": "13:20", "duration": 35, "type": "PANEL", "title": "Building Corporate Bitcoin Treasuries in Europe: Transition Strategies, Challenges & Lessons for Traditional Businesses", "block": "BLOCK: BUILDING ON BITCOIN - TUESDAY MORNING", "people": ["Mod. Finanzas De Chill", "Esau Rojo", "Alexandre Laizet", "Luis Gelado"]}, {"id": "tuesday-tea-1320-36", "day": "tuesday", "dayLabel": "Mar 12", "stage": "Teatro Fernando de Rojas", "stageKey": "main", "start": "13:20", "end": "13:40", "duration": 20, "type": "KEYNOTE", "title": "Capital B: First European Bitcoin Treasury Company: Lessons Learned and Challanges Ahead", "block": "BLOCK: BUILDING ON BITCOIN - TUESDAY MORNING", "people": ["Alexandre Laizet"]}, {"id": "tuesday-tea-1450-37", "day": "tuesday", "dayLabel": "Mar 12", "stage": "Teatro Fernando de Rojas", "stageKey": "main", "start": "14:50", "end": "15:25", "duration": 35, "type": "PANEL", "title": "From HODL to Spend: Real-World Bitcoin Solutions for Retail and Institutions", "block": "BLOCK: BUILDING ON BITCOIN - TUESDAY MORNING", "people": ["Mod. Juan A. Muñoz", "Jos Lazet", "Max Kei", "Iñaki Zubeldia", "Khushboo Khullar", "Matthias Homan"]}, {"id": "tuesday-tea-1525-38", "day": "tuesday", "dayLabel": "Mar 12", "stage": "Teatro Fernando de Rojas", "stageKey": "main", "start": "15:25", "end": "16:05", "duration": 40, "type": "PANEL", "title": "Is there a chance for us? Where is Spain on Bitcoin adoption", "block": "BLOCK: THE SOLUTION. BITCOIN IS THE ANSWER - TUESDAY", "people": ["Mod. Aldona Zukowska-Caramés", "Alvaro D. María", "Alberto Mera", "Adrian Bernabeu", "Jesus Perez", "Juan Ramón Rallo", "Manuel Llamas"]}, {"id": "tuesday-met-0915-39", "day": "tuesday", "dayLabel": "Mar 12", "stage": "Metrópolis Stage", "stageKey": "metro", "start": "09:15", "end": "09:50", "duration": 35, "type": "WORKSHOP", "title": "Introduccion a bitcoin: Lo que deberias saber de bitcoin que no sabes", "block": "VIP & METRÓPOLIS STAGE - TUESDAY", "people": ["Omar Lopez"]}, {"id": "tuesday-met-0950-40", "day": "tuesday", "dayLabel": "Mar 12", "stage": "Metrópolis Stage", "stageKey": "metro", "start": "09:50", "end": "10:25", "duration": 35, "type": "WORKSHOP", "title": "Bitcoin, criptoactivos y fiscalidad: Oportunidad o Reto?", "block": "VIP & METRÓPOLIS STAGE - TUESDAY", "people": ["Clara Garcia Prieto"]}, {"id": "tuesday-met-1025-41", "day": "tuesday", "dayLabel": "Mar 12", "stage": "Metrópolis Stage", "stageKey": "metro", "start": "10:25", "end": "11:00", "duration": 35, "type": "KEYNOTE", "title": "Campaña fiscal: cómo declarar tus criptomonedas en el IRPF", "block": "VIP & METRÓPOLIS STAGE - TUESDAY", "people": ["Sergi Andres"]}, {"id": "tuesday-met-1100-42", "day": "tuesday", "dayLabel": "Mar 12", "stage": "Metrópolis Stage", "stageKey": "metro", "start": "11:00", "end": "11:35", "duration": 35, "type": "PANEL", "title": "Women Leading Change: Financial Education and the Power of Female Voices", "block": "VIP & METRÓPOLIS STAGE - TUESDAY", "people": ["Mod. Alejandra Dito", "Esmeralda Gomez", "Efrat Fenigson", "Paola Moran Rodriguez", "Nazli D'Alonzo"]}, {"id": "tuesday-met-1150-43", "day": "tuesday", "dayLabel": "Mar 12", "stage": "Metrópolis Stage", "stageKey": "metro", "start": "11:50", "end": "12:10", "duration": 20, "type": "PITCH", "title": "UNIVERSIDAD EUROPEA - APP WINNER PRESENTATION", "block": "VIP & METRÓPOLIS STAGE - TUESDAY", "people": []}, {"id": "tuesday-met-1210-44", "day": "tuesday", "dayLabel": "Mar 12", "stage": "Metrópolis Stage", "stageKey": "metro", "start": "12:10", "end": "12:45", "duration": 35, "type": "PANEL", "title": "Shaping Bitcoin Culture Through Education: Strategies for Schools, Universities, and Lifelong Learners", "block": "VIP & METRÓPOLIS STAGE - TUESDAY", "people": ["Mod. Esmeralda Gomez Lopez", "Asaf Levi", "Mercedes Gil", "Kristyna Mazankova"]}, {"id": "tuesday-met-1245-45", "day": "tuesday", "dayLabel": "Mar 12", "stage": "Metrópolis Stage", "stageKey": "metro", "start": "12:45", "end": "13:30", "duration": 45, "type": "WORKSHOP", "title": "How to set up your own node - session for dummies", "block": "VIP & METRÓPOLIS STAGE - TUESDAY", "people": ["Decentralized_B"]}, {"id": "tuesday-met-1450-46", "day": "tuesday", "dayLabel": "Mar 12", "stage": "Metrópolis Stage", "stageKey": "metro", "start": "14:50", "end": "15:10", "duration": 20, "type": "PANEL", "title": "How to set up your Trezor cold wallet", "block": "VIP & METRÓPOLIS STAGE - TUESDAY", "people": ["Karliatto"]}, {"id": "tuesday-met-1510-47", "day": "tuesday", "dayLabel": "Mar 12", "stage": "Metrópolis Stage", "stageKey": "metro", "start": "15:10", "end": "15:40", "duration": 30, "type": "KEYNOTE", "title": "TBD", "block": "VIP & METRÓPOLIS STAGE - TUESDAY", "people": ["Jordy Den Toom", "Vince Van Hoesel"]}, {"id": "tuesday-met-1540-48", "day": "tuesday", "dayLabel": "Mar 12", "stage": "Metrópolis Stage", "stageKey": "metro", "start": "15:40", "end": "16:10", "duration": 30, "type": "KEYNOTE", "title": "Sailing bitcoin: Freedom as compass — SATOBOAT PROJECT", "block": "VIP & METRÓPOLIS STAGE - TUESDAY", "people": ["Remi Genon"]}];
+const LS='madbitcoin:selected:v1';
+const DATA_LS='madbitcoin:event-data:v1';
+let tab='monday', mode='list', modalEventKey=null;
+const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+const min=t=>{let [h,m]=t.split(':').map(Number);return h*60+m};
+const overlap=(a,b)=>a.id!==b.id && a.day===b.day && min(a.start)<min(b.end) && min(b.start)<min(a.end);
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const slug=s=>String(s??'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'').slice(0,80);
+function eventKey(e){return `${e.day}-${e.stageKey}-${e.start.replace(':','')}-${e.end.replace(':','')}-${slug(e.title)}`;}
+function storedKey(k){const e=EVENTS.find(x=>x.id===k); return e?eventKey(e):k;}
+let selected = new Set(JSON.parse(localStorage.getItem(LS)||'[]').map(storedKey));
+let rawEventData = JSON.parse(localStorage.getItem(DATA_LS)||'{}');
+let eventData = {};
+Object.entries(rawEventData).forEach(([k,v])=>{eventData[storedKey(k)] = {...(eventData[storedKey(k)]||{}), ...(v||{})};});
+localStorage.setItem(LS,JSON.stringify([...selected]));
+localStorage.setItem(DATA_LS,JSON.stringify(eventData));
+function isSelected(e){return selected.has(eventKey(e));}
+function selectedEvents(){return EVENTS.filter(isSelected).sort((a,b)=>a.day.localeCompare(b.day)||min(a.start)-min(b.start));}
+function conflictingSelected(e){return selectedEvents().filter(o=>overlap(e,o));}
+function conflicts(e){return isSelected(e) && selectedEvents().some(o=>overlap(e,o));}
+function persist(){localStorage.setItem(LS,JSON.stringify([...selected]));}
+function persistData(){localStorage.setItem(DATA_LS,JSON.stringify(eventData));}
+function dataFor(key){eventData[key] ||= {comment:'',photos:[]}; return eventData[key];}
+function hasNotes(e){const d=eventData[eventKey(e)]; return d && (d.comment?.trim() || d.photos?.length);}
+function toggle(key){selected.has(key)?selected.delete(key):selected.add(key);persist();render();}
+function noteMarks(e){const d=eventData[eventKey(e)]; if(!d)return ''; const m=[]; if(d.comment?.trim())m.push('📝 commentaire'); if(d.photos?.length)m.push(`📷 ${d.photos.length}`); return m.length?`<div class="marks">${m.join(' · ')}</div>`:''}
+function card(e){return `<button class="card ${isSelected(e)?'selected':''} ${conflicts(e)?'conflict':''}" onclick="openEvent('${eventKey(e)}')">
+ <div class="meta"><span class="time">${e.start}–${e.end}</span><span class="badge ${e.stageKey}">${e.stage}</span></div>
+ <div class="title">${esc(e.title)}</div>
+ <div class="people">${esc(e.type)}${e.people.length?' · '+esc(e.people.slice(0,4).join(', ')):''}${e.people.length>4?'…':''}</div>
+ ${noteMarks(e)}
+ </button>`}
+function openEvent(key){
+ key=storedKey(key);
+ const e=EVENTS.find(x=>eventKey(x)===key); if(!e) return; modalEventKey=key;
+ $('#modalKicker').textContent=`${e.dayLabel} · ${e.start}–${e.end}`;
+ $('#modalTitle').textContent=e.title;
+ $('#modalStage').textContent=e.stage;
+ $('#modalType').textContent=e.type||'—';
+ $('#modalPeople').textContent=e.people.length?e.people.join(', '):'—';
+ $('#modalBlock').textContent=e.block||'—';
+ renderModalExtras();
+ const conflicts=conflictingSelected(e).filter(o=>o.id!==e.id);
+ $('#modalWarning').classList.toggle('show',conflicts.length>0);
+ $('#modalWarning').textContent=conflicts.length?`Conflit horaire avec : ${conflicts.map(x=>x.start+' '+x.title).join(' · ')}`:'';
+ const btn=$('#modalSelect'); btn.classList.toggle('selected',selected.has(key)); btn.textContent=selected.has(key)?'Retirer de mon plan':'Ajouter à mon plan';
+ $('#modalBackdrop').classList.add('open');
+}
+function renderModalExtras(){
+ const d=dataFor(modalEventKey);
+ $('#modalComment').value=d.comment||'';
+ $('#photoGrid').innerHTML=(d.photos||[]).map((src,i)=>`<div class="photo"><img src="${src}" alt="Photo événement ${i+1}"><button onclick="removePhoto(${i})" aria-label="Supprimer la photo">×</button></div>`).join('');
+ $('#modalPhotos').value='';
+}
+function saveComment(){if(!modalEventKey)return; dataFor(modalEventKey).comment=$('#modalComment').value; persistData(); render();}
+function addPhotos(ev){
+ if(!modalEventKey)return;
+ const files=[...ev.target.files].filter(f=>f.type.startsWith('image/'));
+ files.forEach(file=>{
+   const reader=new FileReader();
+   reader.onload=()=>{dataFor(modalEventKey).photos.push(reader.result); persistData(); renderModalExtras(); render();};
+   reader.readAsDataURL(file);
+ });
+}
+function removePhoto(i){if(!modalEventKey)return; dataFor(modalEventKey).photos.splice(i,1); persistData(); renderModalExtras(); render();}
+function closeModal(){modalEventKey=null; $('#modalBackdrop').classList.remove('open');}
+function backdropClose(ev){if(ev.target.id==='modalBackdrop') closeModal();}
+function toggleFromModal(){if(!modalEventKey)return; selected.has(modalEventKey)?selected.delete(modalEventKey):selected.add(modalEventKey); persist(); openEvent(modalEventKey); render();}
+
+function listView(day, onlySelected=false){
+ let ev=(onlySelected?selectedEvents():EVENTS.filter(e=>e.day===day)).sort((a,b)=>min(a.start)-min(b.start));
+ if(!ev.length) return '<div class="empty">Aucun événement sélectionné pour l’instant.</div>';
+ let stages=['Teatro Fernando de Rojas','Metrópolis Stage'];
+ return stages.map(st=>{let group=ev.filter(e=>e.stage===st); if(!group.length)return ''; return `<div class="stage"><span class="dot ${group[0].stageKey}"></span>${st}</div>`+group.map(card).join('')}).join('');
+}
+function calendarView(day){
+ const ev=EVENTS.filter(e=>e.day===day); const start=9*60, end=18*60, px=2.75, minH=46, gap=7;
+ function layout(stageKey){
+   let lastBottom=0;
+   return ev.filter(e=>e.stageKey===stageKey).sort((a,b)=>min(a.start)-min(b.start)).map(e=>{
+     const timeTop=(min(e.start)-start)*px;
+     const h=Math.max(minH,(min(e.end)-min(e.start))*px-5);
+     const top=Math.max(timeTop,lastBottom+gap);
+     lastBottom=top+h;
+     return {e,top,h};
+   });
+ }
+ const mainLayout=layout('main'), metroLayout=layout('metro');
+ const height=Math.max((end-start)*px, ...mainLayout.map(x=>x.top+x.h), ...metroLayout.map(x=>x.top+x.h)) + 24;
+ let ticks='';
+ for(let t=start;t<=end;t+=60){ticks+=`<div class="tick" style="top:${(t-start)*px}px">${String(Math.floor(t/60)).padStart(2,'0')}:00</div>`}
+ $('#view').innerHTML=`<div class="cal-wrap">
+   <div class="cal-legend"><div></div><div class="cal-stage-label main">Teatro</div><div class="cal-stage-label metro">Metrópolis</div></div>
+   <div class="cal-body" style="height:${height}px">
+     <div class="cal-axis">${ticks}</div>
+     <div class="cal-col main" style="height:${height}px"></div>
+     <div class="cal-col metro" style="height:${height}px"></div>
+   </div>
+ </div>`;
+ [...mainLayout,...metroLayout].forEach(({e,top,h})=>{
+   let col=document.querySelector('.cal-col.'+e.stageKey);
+   let el=document.createElement('button');
+   el.className=`cal-event ${e.stageKey} ${h<54?'tiny':''} ${isSelected(e)?'selected':''} ${conflicts(e)?'conflict':''}`;
+   el.style.top=top+'px'; el.style.height=h+'px';
+   el.onclick=()=>openEvent(e.id);
+   el.innerHTML=`<div class="time">${e.start}–${e.end}${hasNotes(e)?' · 📝📷':''}</div><div class="ct">${esc(e.title)}</div>`;
+   col.appendChild(el);
+ });
+ return null;
+}
+function render(){
+ $('#subtitle').textContent = tab==='plan' ? 'Mon planning sélectionné' : (tab==='monday'?'Lun 11':'Mar 12')+' · programme';
+ $('#toolbar').style.display = tab==='plan'?'none':'flex';
+ $$('nav button').forEach(b=>b.classList.toggle('active',b.dataset.tab===tab));
+ $$('#toolbar button').forEach(b=>b.classList.toggle('active',b.dataset.mode===mode));
+ $('#c-monday').textContent=[...selected].filter(id=>EVENTS.find(e=>eventKey(e)===id)?.day==='monday').length;
+ $('#c-tuesday').textContent=[...selected].filter(id=>EVENTS.find(e=>eventKey(e)===id)?.day==='tuesday').length;
+ $('#c-plan').textContent=selected.size;
+ if(tab==='plan') $('#view').innerHTML=listView(null,true);
+ else if(mode==='list') $('#view').innerHTML=listView(tab,false);
+ else calendarView(tab);
+}
+$$('nav button').forEach(b=>b.onclick=()=>{tab=b.dataset.tab;render();});
+$$('#toolbar button').forEach(b=>b.onclick=()=>{mode=b.dataset.mode;render();});
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModal()});
+if('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js').catch(()=>{});
+render();
+</script>
+</body>
+</html>
